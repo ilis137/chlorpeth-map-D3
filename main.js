@@ -6,43 +6,99 @@ var width = 1000,
         left: 0,
         right: 0
     }
-var USA_GEO_DATA_JSON = "https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/counties.json"
-var USA_EDUCATION_DATA_JSON = "https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/for_user_education.json"
-var DATA_URLS = [USA_GEO_DATA_JSON, USA_EDUCATION_DATA_JSON]
-var projection = d3.geoMercator()
+var US_GEO_DATA_JSON = "https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/counties.json"
+var US_EDUCATION_DATA_JSON = "https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/for_user_education.json"
+var DATA_URLS = [US_GEO_DATA_JSON, US_EDUCATION_DATA_JSON]
+
 
 var path = d3.geoPath()
 
-const URL = "https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/counties.json"
+
 document.addEventListener("DOMContentLoaded", function(e) {
 
     Promise.all(DATA_URLS.map(url => d3.json(url))).then(processData);
 
     //d3.json(URL).then(processData)
-
-
-
-
 })
 
 function processData(data) {
-    console.log(data)
+
     var [geo_data, education_data] = data
     var counties = topojson.feature(geo_data, geo_data.objects.counties).features
 
-    drawGraph(counties)
+    drawGraph(counties, education_data)
 
-    console.log(counties)
+
 }
 
-function drawGraph(graphdata) {
+function makeScales(data) {
+
+    var [min, max] = d3.extent(data, function(d) {
+        return d.bachelorsOrHigher;
+    })
+    var xScale = d3.scaleLinear()
+        .domain([min, max])
+        .rangeRound([600, 840]);
+    var colorScale = d3.scaleThreshold().domain(d3.range(min, max, (max - min) / 8)).range(d3.schemeBlues[9])
+    var scales = [xScale, colorScale]
+    return scales;
+}
+
+function drawLegend(scales, canvas) {
+    var [xScale, colorScale] = scales
+
+    var g = canvas.append('g')
+        .attr("class", "key")
+        .attr("id", "legend")
+        .attr("transform", "translate(0,40)")
+    console.log(colorScale.range())
+    g.selectAll("rect")
+        .data(colorScale.range().map(function(d) {
+            d = colorScale.invertExtent(d)
+            if (d[0] == null) d[0] = xScale.domain()[0]
+            if (d[1] == null) d[1] = xScale.domain()[1]
+            return d
+        }))
+        .enter()
+        .append("rect")
+        .attr("height", 8)
+        .attr("x", function(d) {
+            return xScale(d[0])
+        })
+        .attr("width", function(d) {
+            return xScale(d[1]) - xScale(d[0])
+        })
+        .attr("fill", function(d) {
+            return colorScale(d[0])
+        })
+
+    g.call(d3.axisBottom(xScale).tickSize(9).tickFormat(function(x) {
+                return Math.round(x) + "%"
+            })
+            .tickValues(colorScale.domain())
+
+        ).select(".domain")
+        .remove();
+}
+
+function drawGraph(geoData, education_data) {
     var canvas = d3.select("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
+    var scales = makeScales(education_data)
+    var [xScale, colorScale] = scales
 
-    .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    drawLegend(scales, canvas)
 
-    canvas.selectAll(".county").data(graphdata).enter().append("path").attr("class", "county")
+
+
+    canvas.selectAll(".county")
+        .data(geoData)
+        .enter()
+        .append("path")
+        .attr("class", "county")
         .attr("d", path)
+
+
+
 }
