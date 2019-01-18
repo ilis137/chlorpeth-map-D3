@@ -14,3 +14,9 @@
     align-items: center;
     margin: 0 auto;
 }
+
+.states {
+    fill: none;
+    stroke: #fff;
+    stroke-linejoin: round;
+}

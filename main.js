@@ -24,9 +24,11 @@ document.addEventListener("DOMContentLoaded", function(e) {
 function processData(data) {
 
     var [geo_data, education_data] = data
-    var counties = topojson.feature(geo_data, geo_data.objects.counties).features
+    var counties_features = topojson.feature(geo_data, geo_data.objects.counties).features
+    var states = geo_data.objects.states
+    geo_data = [counties_features, geo_data]
 
-    drawGraph(counties, education_data)
+    drawGraph(geo_data, education_data)
 
 
 }
@@ -39,7 +41,9 @@ function makeScales(data) {
     var xScale = d3.scaleLinear()
         .domain([min, max])
         .rangeRound([600, 840]);
-    var colorScale = d3.scaleThreshold().domain(d3.range(min, max, (max - min) / 8)).range(d3.schemeBlues[9])
+    var colorScale = d3.scaleThreshold()
+        .domain(d3.range(min, max, (max - min) / 8))
+        .range(d3.schemeBlues[9])
     var scales = [xScale, colorScale]
     return scales;
 }
@@ -87,11 +91,11 @@ function drawGraph(geoData, education_data) {
         .attr("height", height + margin.top + margin.bottom)
     var scales = makeScales(education_data)
     var [xScale, colorScale] = scales
-
+    var [counties_features, geo_data] = geoData
     drawLegend(scales, canvas)
     var div = d3.select(".tooltip")
     canvas.selectAll(".county")
-        .data(geoData)
+        .data(counties_features)
         .enter()
         .append("path")
         .attr("class", "county")
@@ -126,6 +130,11 @@ function drawGraph(geoData, education_data) {
             div.transition().duration(100)
                 .style("opacity", 0)
         })
-
-
+    console.log(geo_data)
+    canvas.append("path")
+        .datum(topojson.mesh(geo_data, geo_data.objects.states, function(a, b) {
+            return a !== b
+        }))
+        .attr("class", "states")
+        .attr("d", path)
 }
