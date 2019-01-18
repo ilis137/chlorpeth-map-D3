@@ -89,16 +89,43 @@ function drawGraph(geoData, education_data) {
     var [xScale, colorScale] = scales
 
     drawLegend(scales, canvas)
-
-
-
+    var div = d3.select(".tooltip")
     canvas.selectAll(".county")
         .data(geoData)
         .enter()
         .append("path")
         .attr("class", "county")
         .attr("d", path)
+        .attr("fill", function(d) {
+            var result = education_data.find(function(education_data_obj) {
+                    return education_data_obj.fips == d.id
+                        //console.log(education_data_obj)
+                })
+                //console.log(result)
+            return colorScale(result.bachelorsOrHigher)
 
+        })
+        .on("mouseover", function(d) {
+            var result = education_data.find(function(education_data_obj) {
+                return education_data_obj.fips == d.id
+                    //console.log(education_data_obj)
+            })
+            console.log(result)
+            div.transition().duration(10).style("opacity", 0.9)
+                .style("top", d3.event.pageY + "px")
+                .style("left", d3.event.pageX + "px")
+
+            div.html("<p>    " + result.area_name + ", " +
+                result.state + " : " + result.bachelorsOrHigher + "%  </p>")
+        })
+        .on("mouseout", function(d) {
+            var result = education_data.find(function(education_data_obj) {
+                return education_data_obj.fips == d.id
+                    //console.log(education_data_obj)
+            })
+            div.transition().duration(100)
+                .style("opacity", 0)
+        })
 
 
 }
