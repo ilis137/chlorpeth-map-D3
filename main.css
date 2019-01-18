@@ -1,1 +1,16 @@
-#main {}
+.tooltip {
+    background-color: papayawhip;
+    opacity: 0;
+    color: black;
+    position: absolute;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+#main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 auto;
+}
